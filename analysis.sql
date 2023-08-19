@@ -102,3 +102,110 @@ where a.t2 >= '2022-01-01' and a.t3 is not null
 group by round(DATEDIFF(a.t3,a.t2)/7,0)
 
 order by t2
+
+
+
+
+select 
+a.code
+,a.name
+,a.t2
+,a.t3
+,coalesce(b.open,b2.open,b3.open) as open
+,c.close
+,c.close-coalesce(b.open,b2.open,b3.open) as diff
+,b.open
+,b2.open
+,b3.open
+from (
+
+	select concat('SZ',secCode) as code
+	,secName
+	,max(case when type = '审核委员会审核通过的公告' then Date(substring(publishTime,1,10)) end) as t1
+	,min(case when type = '获得中国证监会同意注册批复的公告' then Date(substring(publishTime,1,10)) end) as t2
+	,min(case when type in ('向不特定对象发行可转换公司债券募集说明书摘要') then Date(substring(publishTime,1,10)) end) as t3
+	from  convertbond_publish_info
+	where publishTime >'2021-01-01 00:00:00'
+	group by secCode
+	,secName
+
+) a
+left join (
+	select code
+	,FROM_UNIXTIME(timestamp/1000,'%Y-%m-%d') as t2
+	,open 
+	from convertbond_publish_quote_data as a
+)b on a.code = b.code and a.t2 = b.t2
+left join (
+	select code
+	,date_add(date(FROM_UNIXTIME(timestamp/1000,'%Y-%m-%d')),INTERVAL -1 day) as t2
+	,open 
+	from convertbond_publish_quote_data as a
+)b2 on a.code = b2.code and a.t2 = b2.t2
+left join (
+	select code
+	,date_add(date(FROM_UNIXTIME(timestamp/1000,'%Y-%m-%d')),INTERVAL -2 day) as t2
+	,open 
+	from convertbond_publish_quote_data as a
+)b3 on a.code = b3.code and a.t2 = b3.t2
+left join (
+	select code
+	,FROM_UNIXTIME(timestamp/1000,'%Y-%m-%d') as t3
+	,open 
+	,close
+	from convertbond_publish_quote_data as a
+)c on a.code = c.code and a.t3 = c.t3
+where a.t3 is not null
+order by a.t2 desc 
+
+
+
+
+select 
+a.code
+,a.name
+,a.t2
+,a.t3
+,coalesce(b.open,b2.open,b3.open) as open
+,c.close
+,c.close-coalesce(b.open,b2.open,b3.open) as diff
+,b.open
+,b2.open
+,b3.open
+from (
+	select concat('SH',code) as code
+	,name
+	,max(case when type = '审核委员会审核通过的公告' then Date(substring(see_date,1,10)) end) as t1
+	,min(case when type = '获得中国证监会同意注册批复的公告' then Date(substring(see_date,1,10)) end) as t2
+	,min(case when type in ('可转换公司债券募集说明书摘要') then Date(substring(see_date,1,10)) end) as t3
+	from  sh_convertbond_publish_info
+	group by concat('SH',code)
+	,name
+) a
+left join (
+	select code
+	,FROM_UNIXTIME(timestamp/1000,'%Y-%m-%d') as t2
+	,open 
+	from convertbond_publish_quote_data as a
+)b on a.code = b.code and a.t2 = b.t2
+left join (
+	select code
+	,date_add(date(FROM_UNIXTIME(timestamp/1000,'%Y-%m-%d')),INTERVAL -1 day) as t2
+	,open 
+	from convertbond_publish_quote_data as a
+)b2 on a.code = b2.code and a.t2 = b2.t2
+left join (
+	select code
+	,date_add(date(FROM_UNIXTIME(timestamp/1000,'%Y-%m-%d')),INTERVAL -2 day) as t2
+	,open 
+	from convertbond_publish_quote_data as a
+)b3 on a.code = b3.code and a.t2 = b3.t2
+left join (
+	select code
+	,FROM_UNIXTIME(timestamp/1000,'%Y-%m-%d') as t3
+	,open 
+	,close
+	from convertbond_publish_quote_data as a
+)c on a.code = c.code and a.t3 = c.t3
+where a.t3 is not null
+order by a.t2 desc 
